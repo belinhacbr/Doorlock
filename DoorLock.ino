@@ -24,9 +24,11 @@ int STATEB = 0;
 char passA[4] = {'A','B','C','D'};
 char passB[4] = {'1','2','3','4'};
 
-
+unsigned long previousMillis = 0;
+const long interval = 10000;
 
 bool keyPressed(char customKey);
+void feedActivityLED(unsigned long currentMillis);
 void unlockProc();
 
 void setup() {
@@ -42,9 +44,15 @@ void setup() {
 
 void loop() {
   digitalWrite(motor, LOW);    //LOCK
+  
+  unsigned long currentMillis = millis();
+  feedActivityLED(currentMillis);
+  
   char customKey = customKeypad.getKey();
-  digitalWrite(redLed, HIGH);
   if(keyPressed(customKey)){
+      previousMillis = currentMillis;
+      feedActivityLED(currentMillis);
+      
       digitalWrite(greenLed, HIGH);
       
       Serial.print(">>");
@@ -99,15 +107,24 @@ bool keyPressed(char customKey){
   return ((customKey>='0' && customKey<='9') || customKey=='*' || customKey=='#' || (customKey>='A' && customKey<='D'));
 }
 
+void feedActivityLED(unsigned long currentMillis){
+  //To save power i only set HIGH on red led in case of recent activity
+  bool keyPressedRecently = currentMillis - previousMillis <= interval;
+  if(keyPressedRecently){
+    digitalWrite(redLed, HIGH);
+  }else{
+    digitalWrite(redLed, LOW);
+  }
+}
+
 
 void unlockProc(){
     digitalWrite(greenLed, HIGH);
     digitalWrite(redLed, LOW);
     digitalWrite(motor, HIGH);  //UNLOCK
     Serial.println("open");
-    delay(1000);   //wait 1 second
+    delay(1500);   //wait 1,5 seconds
     digitalWrite(greenLed, LOW);
-    delay(9000);   //wait 9 seconds
     digitalWrite(motor, LOW);    //LOCK
     Serial.println("closed");
 
